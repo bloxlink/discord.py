@@ -169,6 +169,7 @@ class Interaction(Generic[ClientT]):
         'channel',
         '_cs_namespace',
         '_cs_command',
+        '_original_data'
     )
 
     def __init__(self, *, data: InteractionPayload, state: ConnectionState[ClientT]):
@@ -192,6 +193,7 @@ class Interaction(Generic[ClientT]):
         self.guild_id: Optional[int] = utils._get_as_snowflake(data, 'guild_id')
         self.channel: Optional[InteractionChannel] = None
         self.application_id: int = int(data['application_id'])
+        self._original_data = data
         self.entitlement_sku_ids: List[int] = [int(x) for x in data.get('entitlement_skus', []) or []]
         self.entitlements: List[Entitlement] = [Entitlement(self._state, x) for x in data.get('entitlements', [])]
 
