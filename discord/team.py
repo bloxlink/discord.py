@@ -142,7 +142,7 @@ class TeamMember(BaseUser):
         self.team: Team = team
         self.membership_state: TeamMembershipState = try_enum(TeamMembershipState, data['membership_state'])
         self.permissions: List[str] = data.get('permissions', [])
-        self.role: TeamMemberRole = try_enum(TeamMemberRole, data['role'])
+        self.role: TeamMemberRole = try_enum(TeamMemberRole, data.get("role", 0))
         super().__init__(state=state, data=data['user'])
 
     def __repr__(self) -> str:
