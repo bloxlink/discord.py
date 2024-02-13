@@ -30,6 +30,7 @@ import logging
 import struct
 import sys
 import time
+import json
 import threading
 import traceback
 import zlib
@@ -497,7 +498,12 @@ class DiscordWebSocket:
             self._buffer = bytearray()
 
         self.log_receive(msg)
-        msg = utils._from_json(msg)
+
+        try:
+            msg = utils._from_json(msg)
+        except json.JSONDecodeError:
+            print(f"Invalid JSON received: {msg}")
+            return
 
         _log.debug('For Shard ID %s: WebSocket Event: %s', self.shard_id, msg)
         event = msg.get('t')
