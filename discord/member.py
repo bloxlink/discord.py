@@ -347,7 +347,7 @@ class Member(discord.abc.Messageable, _UserTag):
         self._state: ConnectionState = state
         self._user: User = state.store_user(data['user'])
         self.guild: Guild = guild
-        self.joined_at: Optional[datetime.datetime] = utils.parse_time(data.get('joined_at'))
+        self.joined_at: Optional[datetime.datetime] = None #utils.parse_time(data.get('joined_at'))
         self.premium_since: Optional[datetime.datetime] = utils.parse_time(data.get('premium_since'))
         self._roles: utils.SnowflakeList = utils.SnowflakeList(map(int, data['roles']))
         self._client_status: _ClientStatus = _ClientStatus()
