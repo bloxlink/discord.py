@@ -362,7 +362,7 @@ class Member(discord.abc.Messageable, _UserTag):
         except KeyError:
             self._permissions = None
 
-        self.timed_out_until: Optional[datetime.datetime] = utils.parse_time(data.get('communication_disabled_until'))
+        self.timed_out_until: Optional[datetime.datetime] = None #utils.parse_time(data.get('communication_disabled_until'))
 
     def __str__(self) -> str:
         return str(self._user)
