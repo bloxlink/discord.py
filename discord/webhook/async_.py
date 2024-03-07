@@ -174,51 +174,52 @@ class AsyncWebhookAdapter:
                     to_send = form_data
 
                 try:
-                    async with session.request(
-                        method, url, data=to_send, headers=headers, params=params, proxy=proxy, proxy_auth=proxy_auth
-                    ) as response:
-                        _log.debug(
-                            'Webhook ID %s with %s %s has returned status code %s',
-                            webhook_id,
-                            method,
-                            url,
-                            response.status,
-                        )
-                        data = await json_or_text(response)
-
-                        remaining = response.headers.get('X-Ratelimit-Remaining')
-                        if remaining == '0' and response.status != 429:
-                            delta = utils._parse_ratelimit_header(response)
+                    async with aiohttp.ClientSession() as session:
+                        async with session.request(
+                            method, url, data=to_send, headers=headers, params=params, proxy=proxy, proxy_auth=proxy_auth
+                        ) as response:
                             _log.debug(
-                                'Webhook ID %s has exhausted its rate limit bucket (retry: %s).',
+                                'Webhook ID %s with %s %s has returned status code %s',
                                 webhook_id,
-                                delta,
+                                method,
+                                url,
+                                response.status,
                             )
-                            lock.delay_by(delta)
+                            data = await json_or_text(response)
 
-                        if 300 > response.status >= 200:
-                            return data
+                            remaining = response.headers.get('X-Ratelimit-Remaining')
+                            if remaining == '0' and response.status != 429:
+                                delta = utils._parse_ratelimit_header(response)
+                                _log.debug(
+                                    'Webhook ID %s has exhausted its rate limit bucket (retry: %s).',
+                                    webhook_id,
+                                    delta,
+                                )
+                                lock.delay_by(delta)
 
-                        if response.status == 429:
-                            if not response.headers.get('Via'):
+                            if 300 > response.status >= 200:
+                                return data
+
+                            if response.status == 429:
+                                if not response.headers.get('Via'):
+                                    raise HTTPException(response, data)
+                                fmt = 'Webhook ID %s is rate limited. Retrying in %.2f seconds.'
+
+                                retry_after: float = data['retry_after']  # type: ignore
+                                _log.warning(fmt, webhook_id, retry_after)
+                                await asyncio.sleep(retry_after)
+                                continue
+
+                            if response.status >= 500:
+                                await asyncio.sleep(1 + attempt * 2)
+                                continue
+
+                            if response.status == 403:
+                                raise Forbidden(response, data)
+                            elif response.status == 404:
+                                raise NotFound(response, data)
+                            else:
                                 raise HTTPException(response, data)
-                            fmt = 'Webhook ID %s is rate limited. Retrying in %.2f seconds.'
-
-                            retry_after: float = data['retry_after']  # type: ignore
-                            _log.warning(fmt, webhook_id, retry_after)
-                            await asyncio.sleep(retry_after)
-                            continue
-
-                        if response.status >= 500:
-                            await asyncio.sleep(1 + attempt * 2)
-                            continue
-
-                        if response.status == 403:
-                            raise Forbidden(response, data)
-                        elif response.status == 404:
-                            raise NotFound(response, data)
-                        else:
-                            raise HTTPException(response, data)
 
                 except OSError as e:
                     if attempt < 4 and e.errno in (54, 10054):
