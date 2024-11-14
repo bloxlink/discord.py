@@ -33,6 +33,7 @@ import sys
 import time
 import threading
 import traceback
+import os
 
 from typing import Any, Callable, Coroutine, Deque, Dict, List, TYPE_CHECKING, NamedTuple, Optional, TypeVar, Tuple
 
@@ -294,7 +295,7 @@ class DiscordWebSocket:
         _max_heartbeat_timeout: float
 
     # fmt: off
-    DEFAULT_GATEWAY    = yarl.URL('wss://gateway.discord.gg/')
+    DEFAULT_GATEWAY    = yarl.URL(os.environ.get("DISCORD_GATEWAY") or 'wss://gateway.discord.gg/')
     DISPATCH                    = 0
     HEARTBEAT                   = 1
     IDENTIFY                    = 2
